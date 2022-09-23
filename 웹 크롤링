@@ -1,0 +1,40 @@
+# 웹 크롤링
+import re
+from urllib.request import urlopen, urlretrieve
+from bs4 import BeautifulSoup
+import pandas as pd
+import requests as rq
+
+def main():
+    root_url = 'https://ors.gir.go.kr/'
+    base_url = root_url+'/home/orap/openList.do?maxPageItems=10&maxIndexPages=10&searchKey=&searchValue=&menuId=10&condition.aplBizNm=&condition.qtaOjEnpNm=&pagerOffset='
+    filename = []
+    return getLinks1(root_url,base_url)
+
+def getLinks1(root_url,base_url):
+    for page in range(0,671,10):
+        url = base_url+str(page)
+        html = urlopen(url)
+        doc = BeautifulSoup(html,'lxml')
+        download_url = '/home/orap/openRead.do?'
+        getLinks2(doc,download_url)
+
+def getLinks2(doc,download_url):
+    for ss in doc.find_all('a',class_="btn30 btnNavy"):
+        url = root_url+download_url + ss.attrs['href'].split('?')[1]
+        html = urlopen(url)
+        doc = BeautifulSoup(html,'lxml')
+        getContents(doc)
+
+def getContents(doc):
+    for ds in doc.find_all('a',class_="btn30 btnGray mgl10"):
+        url = root_url + ds.attrs['href']
+        filename = ''.join(ds.parent.text.split()[:-1])
+        try:
+            urlretrieve(url,'./download/'+filename)
+            print(f'{filename}을 성공적으로 저장')
+        except:
+            pass
+
+if __name__ == 'main()':
+    main()
