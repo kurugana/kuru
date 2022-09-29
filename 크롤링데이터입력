@@ -1,0 +1,66 @@
+qry_detail = """
+insert into tb_ors_detail(
+srno,
+repr_name,
+registno,
+address
+) values(
+:srno,
+:repr_name,
+:registno,
+:address
+)
+"""
+ary_attached = """
+insert into tb_ors_attached(
+filesrno,
+srno,
+filename,
+file_url
+) values(
+:filesrno,
+:srno,
+:filename,
+:file_url
+)
+"""
+def remove_str(x):
+    x = x.replace('\r','')
+    x = x.replace('\t','')
+    x = x.replace('\n','')
+    x = x.replace('다운로드','')
+    return x
+
+for i in range(len(df)):
+    srno = df.iloc[i,0]
+    a = df.iloc[i,1]
+    url = base_url + a
+    html = urlopen(url)
+    bs = BeautifulSoup(html,'lxml')
+    data = {}
+    data['srno'] = srno
+    data['repr_name'] = bs.find('table').find_all('td')[1].text
+    data['registno'] = bs.find('table').find_all('td')[3].text
+    data['address'] = bs.find('table').find_all('td')[4].text
+    conn.execute(text(qry_detail),data)
+    c = len(bs.find_all('a',class_="btn30"))
+    for j in range(0,c):
+        if c >= 2:
+            a = bs.find_all('table',class_ ="boardList01")[1]
+            a = a.find_all('td')[3].text
+            a = remove_str(a)
+            file_url = base_url + bs.find_all('a',class_="btn30")[1].attrs['href']
+        else:
+            a = bs.find_all('table',class_ ="boardList01")[0]
+            a = a.find_all('td')[3].text
+            a = remove_str(a)
+            file_url = base_url + bs.find_all('a',class_="btn30")[0].attrs['href']
+        data = {}
+        
+        data['filesrno'] = str(srno)+'_'+str(j+1)
+        data['srno'] = srno
+        data['filename'] = a
+        data['file_url'] = download_url+str(srno)+'_'+str(j+1)
+        urlretrieve(file_url,a)
+        conn.execute(text(ary_attached),data)
+
